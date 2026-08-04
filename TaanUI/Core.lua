@@ -58,6 +58,18 @@ local function ImportElvUI(profileData, roleName)
 	return true, roleName .. " profile imported"
 end
 
+local function ImportElvUIFilters(filterData, filterName, importKey)
+	local loaded, reason = LoadRequiredAddon("ElvUI")
+	if not loaded then return false, "ElvUI could not be loaded: " .. reason end
+	local E = ElvUI and ElvUI[1]
+	local distributor = E and E:GetModule("Distributor", true)
+	if not distributor then return false, "ElvUI's profile importer is unavailable." end
+	local success = distributor:ImportProfile(filterData)
+	if not success then return false, "ElvUI rejected the filter string." end
+	TaanUIDB.imports[importKey] = true
+	return true, filterName .. " imported"
+end
+
 local function ImportDetails()
 	local loaded, reason = LoadRequiredAddon("Details")
 	if not loaded then return false, "Details could not be loaded: " .. reason end
@@ -156,7 +168,7 @@ local function BuildWindow()
 
 	local subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
 	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)
-	subtitle:SetText("Install the bundled profiles in the order shown below.")
+	subtitle:SetText("Install the profiles below.")
 
 	local requirement = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
 	requirement:SetPoint("TOP", subtitle, "BOTTOM", 0, -12)
@@ -199,28 +211,36 @@ local function BuildWindow()
 		RunImport("elvui", function() return ImportElvUI(data.elvHealer, "Healer") end)
 	end)
 	elvHealer:SetPoint("LEFT", elvDps, "RIGHT", 8, 0)
+	local auraFilters = MakeButton(frame, "Aura Filters", 115, function()
+		RunImport("elvui", function() return ImportElvUIFilters(data.auraFilters, "Aura Filters", "auraFilters") end)
+	end)
+	auraFilters:SetPoint("TOPLEFT", 178, -150)
+	local nameplateFilters = MakeButton(frame, "Nameplate Style Filters", 150, function()
+		RunImport("elvui", function() return ImportElvUIFilters(data.nameplateStyleFilters, "Nameplate Style Filters", "nameplateStyleFilters") end)
+	end)
+	nameplateFilters:SetPoint("LEFT", auraFilters, "RIGHT", 8, 0)
 
-	AddRow(frame, -185, "Details", "details")
+	AddRow(frame, -215, "Details", "details")
 	local detailsButton = MakeButton(frame, "Import Profile", 238, function()
 		RunImport("details", ImportDetails)
 	end)
-	detailsButton:SetPoint("TOPLEFT", 178, -175)
+	detailsButton:SetPoint("TOPLEFT", 178, -205)
 
-	AddRow(frame, -245, "BigWigs", "bigwigs")
+	AddRow(frame, -270, "BigWigs", "bigwigs")
 	local bigWigsDps = MakeButton(frame, "DPS / Tank", 115, function()
 		RunImport("bigwigs", function() return ImportBigWigs(data.bigWigsDpsTank, "DPS / Tank") end)
 	end)
-	bigWigsDps:SetPoint("TOPLEFT", 178, -235)
+	bigWigsDps:SetPoint("TOPLEFT", 178, -260)
 	local bigWigsHealer = MakeButton(frame, "Healer", 115, function()
 		RunImport("bigwigs", function() return ImportBigWigs(data.bigWigsHealer, "Healer") end)
 	end)
 	bigWigsHealer:SetPoint("LEFT", bigWigsDps, "RIGHT", 8, 0)
 
-	AddRow(frame, -305, "WeakAuras", "weakAuras")
+	AddRow(frame, -325, "WeakAuras", "weakAuras")
 	local weakAurasButton = MakeButton(frame, "Import General Auras", 238, function()
 		RunImport("weakAuras", ImportWeakAuras)
 	end)
-	weakAurasButton:SetPoint("TOPLEFT", 178, -295)
+	weakAurasButton:SetPoint("TOPLEFT", 178, -315)
 
 	local finish = MakeButton(frame, "Finish & Reload", 180, function()
 		TaanUIDB.completed = true
@@ -269,15 +289,3 @@ SLASH_TAANUI1 = "/taanui"
 SlashCmdList.TAANUI = function()
 	ShowInstaller(true)
 end
-
-local eventFrame = CreateFrame("Frame")
-eventFrame:RegisterEvent("PLAYER_LOGIN")
-eventFrame:SetScript("OnEvent", function()
-	TaanUIDB = TaanUIDB or {}
-	TaanUIDB.imports = TaanUIDB.imports or {}
-	if not TaanUIDB.completed then
-		C_Timer.After(1, function() ShowInstaller(false) end)
-	else
-		Print("Setup is installed. Type /taanui to run it again.")
-	end
-end)
