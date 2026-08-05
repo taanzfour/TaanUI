@@ -1,5 +1,6 @@
 local addonName = ...
 local data = TaanUIData
+local partyCDData = TaanUIPartyCDData
 
 local frame
 local statusLabels = {}
@@ -95,6 +96,24 @@ local function ImportBigWigs(profileData, roleName)
 	return true, roleName .. " profile imported"
 end
 
+local function ImportPartyCD(profileData, roleName)
+	local loaded, reason = LoadRequiredAddon("PartyCD")
+	if not loaded then return false, "PartyCD could not be loaded: " .. reason end
+	if not PartyCDAPI or not PartyCDAPI.ImportProfile then
+		return false, "The PartyCD profile importer is unavailable."
+	end
+	local profileName = "V8 - " .. roleName
+	local existingName = PartyCDAPI.FindProfileName and PartyCDAPI:FindProfileName(profileName)
+	if existingName and PartyCDAPI.DeleteProfile then
+		local deleted, deleteError = PartyCDAPI:DeleteProfile(existingName)
+		if not deleted then return false, deleteError or "The existing PartyCD profile could not be replaced." end
+	end
+	local success, errorMessage = PartyCDAPI:ImportProfile(profileData, profileName)
+	if not success then return false, errorMessage or "PartyCD rejected the profile string." end
+	TaanUIDB.imports.partyCD = roleName
+	return true, roleName .. " profile imported"
+end
+
 local function ImportWeakAuras()
 	local loaded, reason = LoadRequiredAddon("WeakAuras")
 	if not loaded then return false, "WeakAuras could not be loaded: " .. reason end
@@ -136,12 +155,13 @@ local function RefreshStatuses()
 	if imports.elvui then SetStatus("elvui", imports.elvui .. " imported", true) end
 	if imports.details then SetStatus("details", "Imported", true) end
 	if imports.bigwigs then SetStatus("bigwigs", imports.bigwigs .. " imported", true) end
+	if imports.partyCD then SetStatus("partyCD", imports.partyCD .. " imported", true) end
 	if imports.weakAuras then SetStatus("weakAuras", "Import opened", true) end
 end
 
 local function BuildWindow()
 	frame = CreateFrame("Frame", "TaanUIInstallerFrame", UIParent)
-	frame:SetSize(650, 420)
+	frame:SetSize(650, 475)
 	frame:SetPoint("CENTER")
 	frame:SetFrameStrata("DIALOG")
 	frame:SetToplevel(true)
@@ -236,11 +256,21 @@ local function BuildWindow()
 	end)
 	bigWigsHealer:SetPoint("LEFT", bigWigsDps, "RIGHT", 8, 0)
 
-	AddRow(frame, -325, "WeakAuras", "weakAuras")
+	AddRow(frame, -325, "PartyCD", "partyCD")
+	local partyCDDps = MakeButton(frame, "Tank, Dps", 115, function()
+		RunImport("partyCD", function() return ImportPartyCD(partyCDData.dpsTank, "Tank, Dps") end)
+	end)
+	partyCDDps:SetPoint("TOPLEFT", 178, -315)
+	local partyCDHealer = MakeButton(frame, "Healer", 115, function()
+		RunImport("partyCD", function() return ImportPartyCD(partyCDData.healer, "Healer") end)
+	end)
+	partyCDHealer:SetPoint("LEFT", partyCDDps, "RIGHT", 8, 0)
+
+	AddRow(frame, -380, "WeakAuras", "weakAuras")
 	local weakAurasButton = MakeButton(frame, "Import General Auras", 238, function()
 		RunImport("weakAuras", ImportWeakAuras)
 	end)
-	weakAurasButton:SetPoint("TOPLEFT", 178, -315)
+	weakAurasButton:SetPoint("TOPLEFT", 178, -370)
 
 	local finish = MakeButton(frame, "Finish & Reload", 180, function()
 		TaanUIDB.completed = true
