@@ -1,6 +1,28 @@
 local addonName = ...
 local data = TaanUIData
-local partyCDData = TaanUIPartyCDData
+
+local resolutionProfiles = {
+	["1080p"] = {
+		elvDpsTank = data.elvDpsTank1080p,
+		elvHealer = data.elvHealer1080p,
+		bigWigsDpsTank = data.bigWigsDpsTank1080p,
+		bigWigsHealer = data.bigWigsHealer1080p,
+		partyCDDpsTank = data.partyCDDpsTank1080p,
+		partyCDHealer = data.partyCDHealer1080p,
+		weakAurasGeneral = data.weakAurasGeneral1080p,
+	},
+	["1440p"] = {
+		elvDpsTank = data.elvDpsTank1440p,
+		elvHealer = data.elvHealer1440p,
+		bigWigsDpsTank = data.bigWigsDpsTank1440p,
+		bigWigsHealer = data.bigWigsHealer1440p,
+		partyCDDpsTank = data.partyCDDpsTank1440p,
+		partyCDHealer = data.partyCDHealer1440p,
+		weakAurasGeneral = data.weakAurasGeneral1440p,
+	},
+}
+
+local selectedResolution = "1080p"
 
 local frame
 local statusLabels = {}
@@ -114,13 +136,13 @@ local function ImportPartyCD(profileData, roleName)
 	return true, roleName .. " profile imported"
 end
 
-local function ImportWeakAuras()
+local function ImportWeakAuras(profileData)
 	local loaded, reason = LoadRequiredAddon("WeakAuras")
 	if not loaded then return false, "WeakAuras could not be loaded: " .. reason end
 	if not WeakAuras or not WeakAuras.Import then
 		return false, "The WeakAuras importer is unavailable."
 	end
-	local _, errorMessage = WeakAuras.Import(data.weakAurasGeneral)
+	local _, errorMessage = WeakAuras.Import(profileData)
 	if errorMessage then return false, errorMessage end
 	TaanUIDB.imports.weakAuras = true
 	return true, "Import opened in WeakAuras"
@@ -142,8 +164,8 @@ local function AddRow(parent, y, title, key)
 	label:SetText(title)
 
 	local status = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
-	status:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -34, y - 5)
-	status:SetWidth(155)
+	status:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -14, y - 5)
+	status:SetWidth(145)
 	status:SetJustifyH("RIGHT")
 	status:SetText("|cffaaaaaaNot imported|r")
 	statusLabels[key] = status
@@ -161,7 +183,7 @@ end
 
 local function BuildWindow()
 	frame = CreateFrame("Frame", "TaanUIInstallerFrame", UIParent)
-	frame:SetSize(650, 475)
+	frame:SetSize(650, 510)
 	frame:SetPoint("CENTER")
 	frame:SetFrameStrata("DIALOG")
 	frame:SetToplevel(true)
@@ -222,55 +244,84 @@ local function BuildWindow()
 	local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
 	close:SetPoint("TOPRIGHT", -5, -5)
 
-	AddRow(frame, -125, "ElvUI", "elvui")
-	local elvDps = MakeButton(frame, "DPS / Tank", 115, function()
-		RunImport("elvui", function() return ImportElvUI(data.elvDpsTank, "DPS / Tank") end)
+	local tab1080 = MakeButton(frame, "1080p", 110, function()
+		selectedResolution = "1080p"
 	end)
-	elvDps:SetPoint("TOPLEFT", 178, -115)
-	local elvHealer = MakeButton(frame, "Healer", 115, function()
-		RunImport("elvui", function() return ImportElvUI(data.elvHealer, "Healer") end)
+	tab1080:SetPoint("TOP", frame, "TOP", -59, -112)
+	local tab1440 = MakeButton(frame, "1440p", 110, function()
+		selectedResolution = "1440p"
+	end)
+	tab1440:SetPoint("LEFT", tab1080, "RIGHT", 8, 0)
+
+	local function UpdateTabs()
+		tab1080:SetEnabled(selectedResolution ~= "1080p")
+		tab1440:SetEnabled(selectedResolution ~= "1440p")
+	end
+	tab1080:SetScript("OnClick", function()
+		selectedResolution = "1080p"
+		UpdateTabs()
+	end)
+	tab1440:SetScript("OnClick", function()
+		selectedResolution = "1440p"
+		UpdateTabs()
+	end)
+	UpdateTabs()
+
+	AddRow(frame, -165, "ElvUI", "elvui")
+	local elvDps = MakeButton(frame, "Tank, Dps", 146, function()
+		local roleName = "Tank, Dps " .. selectedResolution
+		RunImport("elvui", function() return ImportElvUI(resolutionProfiles[selectedResolution].elvDpsTank, roleName) end)
+	end)
+	elvDps:SetPoint("TOPLEFT", 175, -155)
+	local elvHealer = MakeButton(frame, "Healer", 146, function()
+		local roleName = "Healer " .. selectedResolution
+		RunImport("elvui", function() return ImportElvUI(resolutionProfiles[selectedResolution].elvHealer, roleName) end)
 	end)
 	elvHealer:SetPoint("LEFT", elvDps, "RIGHT", 8, 0)
-	local auraFilters = MakeButton(frame, "Aura Filters", 115, function()
-		RunImport("elvui", function() return ImportElvUIFilters(data.auraFilters, "Aura Filters", "auraFilters") end)
+	local auraFilters = MakeButton(frame, "Aura Filters", 146, function()
+		RunImport("elvui", function() return ImportElvUIFilters(data.auraFiltersGeneral, "Aura Filters", "auraFilters") end)
 	end)
-	auraFilters:SetPoint("TOPLEFT", 178, -150)
-	local nameplateFilters = MakeButton(frame, "Nameplate Style Filters", 150, function()
-		RunImport("elvui", function() return ImportElvUIFilters(data.nameplateStyleFilters, "Nameplate Style Filters", "nameplateStyleFilters") end)
+	auraFilters:SetPoint("TOPLEFT", 175, -190)
+	local nameplateFilters = MakeButton(frame, "Nameplate Style Filters", 146, function()
+		RunImport("elvui", function() return ImportElvUIFilters(data.nameplateStyleFiltersGeneral, "Nameplate Style Filters", "nameplateStyleFilters") end)
 	end)
 	nameplateFilters:SetPoint("LEFT", auraFilters, "RIGHT", 8, 0)
 
-	AddRow(frame, -215, "Details", "details")
-	local detailsButton = MakeButton(frame, "Import Profile", 238, function()
+	AddRow(frame, -255, "Details", "details")
+	local detailsButton = MakeButton(frame, "Import Details", 300, function()
 		RunImport("details", ImportDetails)
 	end)
-	detailsButton:SetPoint("TOPLEFT", 178, -205)
+	detailsButton:SetPoint("TOPLEFT", 175, -245)
 
-	AddRow(frame, -270, "BigWigs", "bigwigs")
-	local bigWigsDps = MakeButton(frame, "DPS / Tank", 115, function()
-		RunImport("bigwigs", function() return ImportBigWigs(data.bigWigsDpsTank, "DPS / Tank") end)
+	AddRow(frame, -310, "BigWigs", "bigwigs")
+	local bigWigsDps = MakeButton(frame, "Tank, Dps", 146, function()
+		local roleName = "Tank, Dps " .. selectedResolution
+		RunImport("bigwigs", function() return ImportBigWigs(resolutionProfiles[selectedResolution].bigWigsDpsTank, roleName) end)
 	end)
-	bigWigsDps:SetPoint("TOPLEFT", 178, -260)
-	local bigWigsHealer = MakeButton(frame, "Healer", 115, function()
-		RunImport("bigwigs", function() return ImportBigWigs(data.bigWigsHealer, "Healer") end)
+	bigWigsDps:SetPoint("TOPLEFT", 175, -300)
+	local bigWigsHealer = MakeButton(frame, "Healer", 146, function()
+		local roleName = "Healer " .. selectedResolution
+		RunImport("bigwigs", function() return ImportBigWigs(resolutionProfiles[selectedResolution].bigWigsHealer, roleName) end)
 	end)
 	bigWigsHealer:SetPoint("LEFT", bigWigsDps, "RIGHT", 8, 0)
 
-	AddRow(frame, -325, "PartyCD", "partyCD")
-	local partyCDDps = MakeButton(frame, "Tank, Dps", 115, function()
-		RunImport("partyCD", function() return ImportPartyCD(partyCDData.dpsTank, "Tank, Dps") end)
+	AddRow(frame, -365, "PartyCD", "partyCD")
+	local partyCDDps = MakeButton(frame, "Tank, Dps", 146, function()
+		local roleName = "Tank, Dps " .. selectedResolution
+		RunImport("partyCD", function() return ImportPartyCD(resolutionProfiles[selectedResolution].partyCDDpsTank, roleName) end)
 	end)
-	partyCDDps:SetPoint("TOPLEFT", 178, -315)
-	local partyCDHealer = MakeButton(frame, "Healer", 115, function()
-		RunImport("partyCD", function() return ImportPartyCD(partyCDData.healer, "Healer") end)
+	partyCDDps:SetPoint("TOPLEFT", 175, -355)
+	local partyCDHealer = MakeButton(frame, "Healer", 146, function()
+		local roleName = "Healer " .. selectedResolution
+		RunImport("partyCD", function() return ImportPartyCD(resolutionProfiles[selectedResolution].partyCDHealer, roleName) end)
 	end)
 	partyCDHealer:SetPoint("LEFT", partyCDDps, "RIGHT", 8, 0)
 
-	AddRow(frame, -380, "WeakAuras", "weakAuras")
-	local weakAurasButton = MakeButton(frame, "Import General Auras", 238, function()
-		RunImport("weakAuras", ImportWeakAuras)
+	AddRow(frame, -420, "WeakAuras", "weakAuras")
+	local weakAurasButton = MakeButton(frame, "Import General Auras", 300, function()
+		RunImport("weakAuras", function() return ImportWeakAuras(resolutionProfiles[selectedResolution].weakAurasGeneral) end)
 	end)
-	weakAurasButton:SetPoint("TOPLEFT", 178, -370)
+	weakAurasButton:SetPoint("TOPLEFT", 175, -410)
 
 	local finish = MakeButton(frame, "Finish & Reload", 180, function()
 		TaanUIDB.completed = true
@@ -284,7 +335,7 @@ local function BuildWindow()
 
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "1.0.0"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.0.3"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")

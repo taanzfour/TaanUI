@@ -2,10 +2,9 @@
 ## Title: |cff39d7ffTaanUI|r
 ## Notes: Personal UI profile installer.
 ## Author: Taan
-## Version: 1.1.0
+## Version: 2.0.3
 ## SavedVariables: TaanUIDB
 ## OptionalDeps: ElvUI, Details, BigWigs, PartyCD, WeakAuras
 
 Data.lua
-PartyCDData.lua
 Core.lua
