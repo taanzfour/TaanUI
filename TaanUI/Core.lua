@@ -24,6 +24,49 @@ local resolutionProfiles = {
 
 local selectedResolution = "1080p"
 
+local BRAND_HOVER = {0.5373, 0.4941, 0.8941}
+local DISCORD_BLUE = {0.35, 0.75, 1}
+local ELV_BUTTON_BACKGROUND = {0.1, 0.1, 0.1, 1}
+local ELV_BUTTON_BORDER = {0.1, 0.1, 0.1, 1}
+local ELV_BACKDROP_FADE = {0.06, 0.06, 0.06, 0.8}
+local FALLBACK_BUTTON_TEXTURE = "Interface\\Buttons\\WHITE8X8"
+local EXPRESSWAY_FONT = "Interface\\AddOns\\ElvUI\\media\\fonts\\Expressway.ttf"
+local ELV_GLOW_TEXTURE = "Interface\\AddOns\\ElvUI\\media\\textures\\glowTex.tga"
+
+local BUTTON_FONT = CreateFont("TaanUIExpresswayButtonFont")
+BUTTON_FONT:SetFont(EXPRESSWAY_FONT, 12, "OUTLINE")
+BUTTON_FONT:SetTextColor(1, 0.82, 0)
+
+local SELECTED_BUTTON_FONT = CreateFont("TaanUIExpresswaySelectedButtonFont")
+SELECTED_BUTTON_FONT:SetFont(EXPRESSWAY_FONT, 12, "OUTLINE")
+SELECTED_BUTTON_FONT:SetTextColor(1, 1, 1)
+
+local function SetExpressway(fontString, size, flags)
+	fontString:SetFont(EXPRESSWAY_FONT, size, flags or "OUTLINE")
+end
+
+local function CreateSelectionGlow(target)
+	local engine = ElvUI and ElvUI[1]
+	local media = engine and engine.media
+	local valueColor = media and media.rgbvaluecolor or BRAND_HOVER
+	local glow = CreateFrame("Frame", nil, target)
+	glow:SetPoint("TOPLEFT", target, "TOPLEFT", -3, 3)
+	glow:SetPoint("BOTTOMRIGHT", target, "BOTTOMRIGHT", 3, -3)
+	glow:SetBackdrop({ edgeFile = ELV_GLOW_TEXTURE, edgeSize = 4 })
+	glow:SetBackdropBorderColor(valueColor[1], valueColor[2], valueColor[3], 0.9)
+	glow:Hide()
+	return glow
+end
+
+local function GetElvButtonColors()
+	local engine = ElvUI and ElvUI[1]
+	local media = engine and engine.media
+	return media and media.backdropcolor or ELV_BUTTON_BACKGROUND,
+		media and media.bordercolor or ELV_BUTTON_BORDER,
+		media and media.rgbvaluecolor or BRAND_HOVER,
+		media and media.normTex or FALLBACK_BUTTON_TEXTURE
+end
+
 local frame
 local statusLabels = {}
 
@@ -149,10 +192,39 @@ local function ImportWeakAuras(profileData)
 end
 
 local function MakeButton(parent, text, width, onClick)
+	local backgroundColor, borderColor, hoverBorderColor, buttonTexture = GetElvButtonColors()
+	local engine = ElvUI and ElvUI[1]
 	local button = CreateFrame("Button", nil, parent, "UIPanelButtonTemplate")
 	button:SetSize(width, 28)
+	button:SetNormalTexture(nil)
+	button:SetPushedTexture(nil)
+	button:SetHighlightTexture(nil)
+	button:SetDisabledTexture(nil)
+	if engine and button.SetTemplate then
+		button:SetTemplate("Default", true, true)
+	else
+		button:SetBackdrop({
+			bgFile = buttonTexture,
+			edgeFile = FALLBACK_BUTTON_TEXTURE,
+			edgeSize = 1,
+			insets = { left = 0, right = 0, top = 0, bottom = 0 },
+		})
+		button:SetBackdropColor(unpack(backgroundColor))
+	end
+	button:SetBackdropBorderColor(unpack(borderColor))
+	button:SetNormalFontObject(BUTTON_FONT)
+	button:SetHighlightFontObject(SELECTED_BUTTON_FONT)
+	button:SetDisabledFontObject(BUTTON_FONT)
 	button:SetText(text)
+	button.defaultBorderColor = borderColor
+	button.hoverBorderColor = hoverBorderColor
 	button:SetScript("OnClick", onClick)
+	button:SetScript("OnEnter", function(self)
+		self:SetBackdropBorderColor(unpack(self.hoverBorderColor))
+	end)
+	button:SetScript("OnLeave", function(self)
+		self:SetBackdropBorderColor(unpack(self.isSelected and self.hoverBorderColor or self.defaultBorderColor))
+	end)
 	return button
 end
 
@@ -161,12 +233,15 @@ local function AddRow(parent, y, title, key)
 	label:SetPoint("TOPLEFT", parent, "TOPLEFT", 34, y)
 	label:SetWidth(135)
 	label:SetJustifyH("LEFT")
+	SetExpressway(label, 12)
+	label:SetTextColor(1, 1, 1)
 	label:SetText(title)
 
 	local status = parent:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	status:SetPoint("TOPRIGHT", parent, "TOPRIGHT", -14, y - 5)
 	status:SetWidth(145)
 	status:SetJustifyH("RIGHT")
+	SetExpressway(status, 11)
 	status:SetText("|cffaaaaaaNot imported|r")
 	statusLabels[key] = status
 	return label, status
@@ -182,38 +257,72 @@ local function RefreshStatuses()
 end
 
 local function BuildWindow()
+	local engine = ElvUI and ElvUI[1]
+	local media = engine and engine.media
+	local windowBackgroundColor = media and media.backdropfadecolor or ELV_BACKDROP_FADE
+	local _, windowBorderColor = GetElvButtonColors()
 	frame = CreateFrame("Frame", "TaanUIInstallerFrame", UIParent)
 	frame:SetSize(650, 510)
 	frame:SetPoint("CENTER")
-	frame:SetFrameStrata("DIALOG")
+	frame:SetFrameStrata("TOOLTIP")
 	frame:SetToplevel(true)
 	frame:SetClampedToScreen(true)
 	frame:SetMovable(true)
 	frame:EnableMouse(true)
 	frame:SetBackdrop({
-		bgFile = "Interface\\Tooltips\\UI-Tooltip-Background",
-		edgeFile = "Interface\\Tooltips\\UI-Tooltip-Border",
-		edgeSize = 16,
-		insets = { left = 4, right = 4, top = 4, bottom = 4 },
+		bgFile = "Interface\\Buttons\\WHITE8X8",
+		edgeFile = "Interface\\Buttons\\WHITE8X8",
+		edgeSize = 1,
+		insets = { left = 1, right = 1, top = 1, bottom = 1 },
 	})
-	frame:SetBackdropColor(0.035, 0.045, 0.06, 0.98)
-	frame:SetBackdropBorderColor(0.15, 0.65, 0.85, 1)
+	frame:SetBackdropColor(unpack(windowBackgroundColor))
+	frame:SetBackdropBorderColor(0, 0, 0, 1)
+
+	local borderTop = frame:CreateTexture(nil, "OVERLAY")
+	borderTop:SetTexture("Interface\\Buttons\\WHITE8X8")
+	borderTop:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, 0)
+	borderTop:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, 0)
+	borderTop:SetHeight(1)
+	borderTop:SetVertexColor(unpack(windowBorderColor))
+
+	local borderBottom = frame:CreateTexture(nil, "OVERLAY")
+	borderBottom:SetTexture("Interface\\Buttons\\WHITE8X8")
+	borderBottom:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 0)
+	borderBottom:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 0)
+	borderBottom:SetHeight(1)
+	borderBottom:SetVertexColor(unpack(windowBorderColor))
+
+	local borderLeft = frame:CreateTexture(nil, "OVERLAY")
+	borderLeft:SetTexture("Interface\\Buttons\\WHITE8X8")
+	borderLeft:SetPoint("TOPLEFT", frame, "TOPLEFT", 0, -1)
+	borderLeft:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 0, 1)
+	borderLeft:SetWidth(1)
+	borderLeft:SetVertexColor(unpack(windowBorderColor))
+
+	local borderRight = frame:CreateTexture(nil, "OVERLAY")
+	borderRight:SetTexture("Interface\\Buttons\\WHITE8X8")
+	borderRight:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 0, -1)
+	borderRight:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", 0, 1)
+	borderRight:SetWidth(1)
+	borderRight:SetVertexColor(unpack(windowBorderColor))
 
 	frame:SetScript("OnMouseDown", function(self, button)
 		if button == "LeftButton" then self:StartMoving() end
 	end)
 	frame:SetScript("OnMouseUp", function(self) self:StopMovingOrSizing() end)
 
-	local title = frame:CreateFontString(nil, "OVERLAY", "GameFontNormalLarge")
-	title:SetPoint("TOP", 0, -22)
-	title:SetText("|cff39d7ffV8|r Setup")
-
-	local subtitle = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlight")
-	subtitle:SetPoint("TOP", title, "BOTTOM", 0, -8)
-	subtitle:SetText("Install the profiles below.")
+	local title = CreateFrame("Frame", nil, frame)
+	title:SetSize(300, 28)
+	title:SetPoint("TOP", frame, "TOP", 0, -5)
+	local titleText = title:CreateFontString(nil, "OVERLAY")
+	titleText:SetPoint("CENTER", title, "CENTER", 0, 0)
+	SetExpressway(titleText, 20)
+	titleText:SetText("V8 Installation")
+	titleText:SetTextColor(1, 1, 1)
 
 	local requirement = frame:CreateFontString(nil, "OVERLAY", "GameFontNormal")
-	requirement:SetPoint("TOP", subtitle, "BOTTOM", 0, -12)
+	requirement:SetPoint("TOP", title, "BOTTOM", 0, -14)
+	SetExpressway(requirement, 12)
 	requirement:SetText("|cffff3030You must have the addons from my discord!|r")
 	requirement:SetJustifyH("CENTER")
 
@@ -221,8 +330,8 @@ local function BuildWindow()
 	local discordLink = CreateFrame("EditBox", nil, frame)
 	discordLink:SetSize(230, 20)
 	discordLink:SetPoint("TOP", requirement, "BOTTOM", 0, -1)
-	discordLink:SetFontObject(GameFontNormal)
-	discordLink:SetTextColor(0.55, 1, 0.15)
+	discordLink:SetFont(EXPRESSWAY_FONT, 12, "OUTLINE")
+	discordLink:SetTextColor(unpack(DISCORD_BLUE))
 	discordLink:SetJustifyH("CENTER")
 	discordLink:SetAutoFocus(false)
 	discordLink:SetText(discordUrl)
@@ -237,12 +346,38 @@ local function BuildWindow()
 	end)
 	local discordUnderline = frame:CreateTexture(nil, "OVERLAY")
 	discordUnderline:SetTexture("Interface\\Buttons\\WHITE8X8")
-	discordUnderline:SetVertexColor(0.55, 1, 0.15, 1)
+	discordUnderline:SetVertexColor(DISCORD_BLUE[1], DISCORD_BLUE[2], DISCORD_BLUE[3], 1)
 	discordUnderline:SetSize(218, 1)
 	discordUnderline:SetPoint("BOTTOM", discordLink, "BOTTOM", 0, 2)
 
-	local close = CreateFrame("Button", nil, frame, "UIPanelCloseButton")
-	close:SetPoint("TOPRIGHT", -5, -5)
+	local close = CreateFrame("Button", nil, frame)
+	local closeBackgroundColor, closeBorderColor, closeHoverBorderColor, closeTexture = GetElvButtonColors()
+	close:SetSize(32, 32)
+	close:SetPoint("TOPRIGHT", frame, "TOPRIGHT", 2, 2)
+	local closeBackdrop = CreateFrame("Frame", nil, close)
+	closeBackdrop:SetFrameLevel(close:GetFrameLevel() + 1)
+	closeBackdrop:SetPoint("TOPLEFT", close, "TOPLEFT", 7, -8)
+	closeBackdrop:SetPoint("BOTTOMRIGHT", close, "BOTTOMRIGHT", -8, 8)
+	if ElvUI and ElvUI[1] and closeBackdrop.SetTemplate then
+		closeBackdrop:SetTemplate("Default", true, true)
+	else
+		closeBackdrop:SetBackdrop({
+			bgFile = closeTexture,
+			edgeFile = FALLBACK_BUTTON_TEXTURE,
+			edgeSize = 1,
+			insets = { left = 0, right = 0, top = 0, bottom = 0 },
+		})
+		closeBackdrop:SetBackdropColor(unpack(closeBackgroundColor))
+	end
+	closeBackdrop:SetBackdropBorderColor(unpack(closeBorderColor))
+	local closeText = closeBackdrop:CreateFontString(nil, "OVERLAY")
+	closeText:SetPoint("CENTER", closeBackdrop, "CENTER", 0, 0)
+	SetExpressway(closeText, 16)
+	closeText:SetText("x")
+	closeText:SetTextColor(1, 1, 1)
+	close:SetScript("OnClick", function() frame:Hide() end)
+	close:SetScript("OnEnter", function() closeBackdrop:SetBackdropBorderColor(unpack(closeHoverBorderColor)) end)
+	close:SetScript("OnLeave", function() closeBackdrop:SetBackdropBorderColor(unpack(closeBorderColor)) end)
 
 	local tab1080 = MakeButton(frame, "1080p", 110, function()
 		selectedResolution = "1080p"
@@ -252,10 +387,21 @@ local function BuildWindow()
 		selectedResolution = "1440p"
 	end)
 	tab1440:SetPoint("LEFT", tab1080, "RIGHT", 8, 0)
+	tab1080.selectionGlow = CreateSelectionGlow(tab1080)
+	tab1440.selectionGlow = CreateSelectionGlow(tab1440)
 
 	local function UpdateTabs()
-		tab1080:SetEnabled(selectedResolution ~= "1080p")
-		tab1440:SetEnabled(selectedResolution ~= "1440p")
+		local function SetSelected(tab, selected)
+			tab.isSelected = selected
+			tab:SetNormalFontObject(selected and SELECTED_BUTTON_FONT or BUTTON_FONT)
+			tab:SetHighlightFontObject(SELECTED_BUTTON_FONT)
+			tab:SetDisabledFontObject(selected and SELECTED_BUTTON_FONT or BUTTON_FONT)
+			tab:SetBackdropBorderColor(unpack(selected and tab.hoverBorderColor or tab.defaultBorderColor))
+			if selected then tab.selectionGlow:Show() else tab.selectionGlow:Hide() end
+			tab:SetEnabled(not selected)
+		end
+		SetSelected(tab1080, selectedResolution == "1080p")
+		SetSelected(tab1440, selectedResolution == "1440p")
 	end
 	tab1080:SetScript("OnClick", function()
 		selectedResolution = "1080p"
@@ -331,18 +477,20 @@ local function BuildWindow()
 
 	local credit = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	credit:SetPoint("BOTTOMRIGHT", frame, "BOTTOMRIGHT", -14, 14)
+	SetExpressway(credit, 11)
 	credit:SetText("By taan")
 
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.0.4"))
+	SetExpressway(version, 11)
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.2.8"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")
 end
 
 StaticPopupDialogs.TAANUI_RELOAD = {
-	text = "V8 setup is complete. Reload the interface now?",
+	text = "V8 installation is complete. Reload the interface now?",
 	button1 = "Reload",
 	button2 = CANCEL,
 	OnAccept = ReloadUI,
@@ -367,6 +515,8 @@ local function ShowInstaller(reset)
 end
 
 SLASH_TAANUI1 = "/taanui"
+SLASH_TAANUI2 = "/v8"
+SLASH_TAANUI3 = "/tui"
 SlashCmdList.TAANUI = function()
 	ShowInstaller(true)
 end
