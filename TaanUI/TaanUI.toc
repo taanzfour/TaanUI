@@ -1,8 +1,8 @@
 ## Interface: 70300
 ## Title: |cff39d7ffTaanUI|r
-## Notes: Personal UI profile installer.
+## Notes: V8 UI installer.
 ## Author: Taan
-## Version: 2.2.8
+## Version: 2.3.1
 ## SavedVariables: TaanUIDB
 ## OptionalDeps: ElvUI, Details, BigWigs, PartyCD, WeakAuras
 
