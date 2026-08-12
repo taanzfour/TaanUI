@@ -9,7 +9,7 @@ local resolutionProfiles = {
 		bigWigsHealer = data.bigWigsHealer1080p,
 		partyCDDpsTank = data.partyCDDpsTank1080p,
 		partyCDHealer = data.partyCDHealer1080p,
-		weakAurasGeneral = data.weakAurasGeneral1080p,
+		weakAurasGeneral = data.weakAurasGeneral,
 	},
 	["1440p"] = {
 		elvDpsTank = data.elvDpsTank1440p,
@@ -18,7 +18,7 @@ local resolutionProfiles = {
 		bigWigsHealer = data.bigWigsHealer1440p,
 		partyCDDpsTank = data.partyCDDpsTank1440p,
 		partyCDHealer = data.partyCDHealer1440p,
-		weakAurasGeneral = data.weakAurasGeneral1440p,
+		weakAurasGeneral = data.weakAurasGeneral,
 	},
 }
 
@@ -483,7 +483,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.3.1"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.3.2"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")
