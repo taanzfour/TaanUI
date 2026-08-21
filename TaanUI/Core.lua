@@ -9,7 +9,8 @@ local resolutionProfiles = {
 		bigWigsHealer = data.bigWigsHealer1080p,
 		partyCDDpsTank = data.partyCDDpsTank1080p,
 		partyCDHealer = data.partyCDHealer1080p,
-		weakAurasGeneral = data.weakAurasGeneral,
+		details = data.details1080p,
+		weakAurasGeneral = data.weakAurasGeneral1080p,
 	},
 	["1440p"] = {
 		elvDpsTank = data.elvDpsTank1440p,
@@ -18,7 +19,8 @@ local resolutionProfiles = {
 		bigWigsHealer = data.bigWigsHealer1440p,
 		partyCDDpsTank = data.partyCDDpsTank1440p,
 		partyCDHealer = data.partyCDHealer1440p,
-		weakAurasGeneral = data.weakAurasGeneral,
+		details = data.details1440p,
+		weakAurasGeneral = data.weakAurasGeneral1440p,
 	},
 }
 
@@ -136,16 +138,17 @@ local function ImportElvUIFilters(filterData, filterName, importKey)
 	return true, filterName .. " imported"
 end
 
-local function ImportDetails()
+local function ImportDetails(profileData, resolution)
 	local loaded, reason = LoadRequiredAddon("Details")
 	if not loaded then return false, "Details could not be loaded: " .. reason end
 	if not _detalhes or not _detalhes.ImportProfileString then
 		return false, "The Details profile importer is unavailable."
 	end
-	local success, errorMessage = _detalhes:ImportProfileString(data.details, "V8", true)
+	local profileName = "V8 - " .. resolution
+	local success, errorMessage = _detalhes:ImportProfileString(profileData, profileName, true)
 	if not success then return false, errorMessage or "Details rejected the profile string." end
-	TaanUIDB.imports.details = true
-	return true, "V8 profile imported"
+	TaanUIDB.imports.details = resolution
+	return true, profileName .. " profile imported"
 end
 
 local function ImportBigWigs(profileData, roleName)
@@ -179,7 +182,7 @@ local function ImportPartyCD(profileData, roleName)
 	return true, roleName .. " profile imported"
 end
 
-local function ImportWeakAuras(profileData)
+local function ImportWeakAuras(profileData, resolution)
 	local loaded, reason = LoadRequiredAddon("WeakAuras")
 	if not loaded then return false, "WeakAuras could not be loaded: " .. reason end
 	if not WeakAuras or not WeakAuras.Import then
@@ -187,8 +190,8 @@ local function ImportWeakAuras(profileData)
 	end
 	local _, errorMessage = WeakAuras.Import(profileData)
 	if errorMessage then return false, errorMessage end
-	TaanUIDB.imports.weakAuras = true
-	return true, "Import opened in WeakAuras"
+	TaanUIDB.imports.weakAuras = resolution
+	return true, resolution .. " import opened in WeakAuras"
 end
 
 local function MakeButton(parent, text, width, onClick)
@@ -250,10 +253,14 @@ end
 local function RefreshStatuses()
 	local imports = TaanUIDB.imports
 	if imports.elvui then SetStatus("elvui", imports.elvui .. " imported", true) end
-	if imports.details then SetStatus("details", "Imported", true) end
+	if imports.details then
+		SetStatus("details", type(imports.details) == "string" and (imports.details .. " imported") or "Imported", true)
+	end
 	if imports.bigwigs then SetStatus("bigwigs", imports.bigwigs .. " imported", true) end
 	if imports.partyCD then SetStatus("partyCD", imports.partyCD .. " imported", true) end
-	if imports.weakAuras then SetStatus("weakAuras", "Import opened", true) end
+	if imports.weakAuras then
+		SetStatus("weakAuras", type(imports.weakAuras) == "string" and (imports.weakAuras .. " opened") or "Import opened", true)
+	end
 end
 
 local function BuildWindow()
@@ -435,7 +442,7 @@ local function BuildWindow()
 
 	AddRow(frame, -255, "Details", "details")
 	local detailsButton = MakeButton(frame, "Import Details", 300, function()
-		RunImport("details", ImportDetails)
+		RunImport("details", function() return ImportDetails(resolutionProfiles[selectedResolution].details, selectedResolution) end)
 	end)
 	detailsButton:SetPoint("TOPLEFT", 175, -245)
 
@@ -465,7 +472,9 @@ local function BuildWindow()
 
 	AddRow(frame, -420, "WeakAuras", "weakAuras")
 	local weakAurasButton = MakeButton(frame, "Import General Auras", 300, function()
-		RunImport("weakAuras", function() return ImportWeakAuras(resolutionProfiles[selectedResolution].weakAurasGeneral) end)
+		RunImport("weakAuras", function()
+			return ImportWeakAuras(resolutionProfiles[selectedResolution].weakAurasGeneral, selectedResolution)
+		end)
 	end)
 	weakAurasButton:SetPoint("TOPLEFT", 175, -410)
 
@@ -483,7 +492,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.3.3"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.4.0"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")
