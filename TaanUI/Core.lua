@@ -333,7 +333,7 @@ local function BuildWindow()
 	requirement:SetText("|cffff3030You must have the addons from my discord!|r")
 	requirement:SetJustifyH("CENTER")
 
-	local discordUrl = "https://discord.gg/sVMDjvnCkg"
+	local discordUrl = "https://discord.gg/yMTpEyuCAB"
 	local discordLink = CreateFrame("EditBox", nil, frame)
 	discordLink:SetSize(230, 20)
 	discordLink:SetPoint("TOP", requirement, "BOTTOM", 0, -1)
@@ -492,7 +492,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.4.0"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.4.1"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")
