@@ -492,7 +492,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 14)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "2.4.1"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.0.0"))
 
 	frame:Hide()
 	tinsert(UISpecialFrames, "TaanUIInstallerFrame")
