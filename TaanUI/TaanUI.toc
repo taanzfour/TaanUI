@@ -2,7 +2,7 @@
 ## Title: |cff39d7ffTaanUI|r
 ## Notes: V8 UI installer.
 ## Author: Taan
-## Version: 3.0.0
+## Version: 3.0.1
 ## SavedVariables: TaanUIDB
 ## OptionalDeps: ElvUI, Details, BigWigs, PartyCD, WeakAuras
 
