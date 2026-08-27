@@ -669,7 +669,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 12)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.0"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.1"))
 
 	frame.ShowWelcome = ShowWelcome
 	ShowWelcome()
@@ -798,6 +798,9 @@ local function InstallAllForResolution(resolution, useClassColors)
 end
 
 local function SetSpecProfilesForResolution(resolution)
+	TaanUIDB = TaanUIDB or {}
+	TaanUIDB.imports = TaanUIDB.imports or {}
+
 	local numSpecs = GetNumSpecializations and GetNumSpecializations() or 0
 	if numSpecs < 1 then
 		Print("No specializations are available for this character.")
@@ -875,14 +878,14 @@ local function SetSpecProfilesForResolution(resolution)
 		return true
 	end)
 
-	RunStep("Details all-character profile", function()
-		return EnableDetailsAllCharacters(resolution)
+	RunStep("Addon settings", function()
+		return ApplyAddonSettings(resolution)
 	end)
 
 	if failureCount == 0 then
-		Print(resolution .. " spec profiles enabled, with Details shared across all characters.")
+		Print(resolution .. " spec profiles enabled and addon settings applied.")
 	else
-		Print(failureCount .. " spec profile setup step(s) failed.")
+		Print(failureCount .. " spec profile or addon settings step(s) failed.")
 	end
 end
 
@@ -893,8 +896,10 @@ local function PrintCommands()
 	Print("/tui 1080d - Install all 1080p profiles with Dark health bars.")
 	Print("/tui 1440c - Install all 1440p profiles with Class Colors.")
 	Print("/tui 1440d - Install all 1440p profiles with Dark health bars.")
-	Print("/tui 1080set - Assign the 1080p profiles to your specializations.")
-	Print("/tui 1440set - Assign the 1440p profiles to your specializations.")
+	Print("/tui set 1080 - Assign 1080p spec profiles and apply addon settings.")
+	Print("/tui set 1440 - Assign 1440p spec profiles and apply addon settings.")
+	Print("/tui set class - Enable ElvUI class-colored health bars.")
+	Print("/tui set dark - Enable ElvUI dark transparent health bars.")
 	Print("/tui commands - Show this command list.")
 end
 
@@ -910,14 +915,20 @@ SlashCmdList.TAANUI = function(message)
 		["1440d"] = { "1440p", false },
 	}
 	local specInstalls = {
-		["1080set"] = "1080p",
-		["1440set"] = "1440p",
+		["set 1080"] = "1080p",
+		["set 1440"] = "1440p",
 	}
 	local install = installs[command]
 	if install then
 		InstallAllForResolution(install[1], install[2])
 	elseif specInstalls[command] then
 		SetSpecProfilesForResolution(specInstalls[command])
+	elseif command == "set class" or command == "set dark" then
+		TaanUIDB = TaanUIDB or {}
+		TaanUIDB.imports = TaanUIDB.imports or {}
+		RunImport("elvui", function()
+			return ApplyElvUIHealthColors(command == "set class")
+		end)
 	elseif command == "commands" then
 		PrintCommands()
 	else
