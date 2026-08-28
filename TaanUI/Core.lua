@@ -122,7 +122,7 @@ local function ImportElvUI(profileData, roleName)
 	local E = ElvUI and ElvUI[1]
 	local distributor = E and E:GetModule("Distributor", true)
 	if not distributor then return false, "ElvUI's profile importer is unavailable." end
-	local profileName = "V8 - " .. roleName
+	local profileName = "tui - " .. roleName
 	local success
 	if distributor.ImportProfileAs then
 		success = distributor:ImportProfileAs(profileData, profileName, true)
@@ -169,7 +169,7 @@ local function ImportDetails(profileData, resolution)
 	if not _detalhes or not _detalhes.ImportProfileString then
 		return false, "The Details profile importer is unavailable."
 	end
-	local profileName = "V8 - " .. resolution
+	local profileName = "tui - " .. resolution
 	local success, errorMessage = _detalhes:ImportProfileString(profileData, profileName, true)
 	if not success then return false, errorMessage or "Details rejected the profile string." end
 	TaanUIDB.imports.details = resolution
@@ -182,7 +182,7 @@ local function ImportBigWigs(profileData, roleName)
 	if not BigWigsAPI or not BigWigsAPI.ImportProfileString then
 		return false, "The BigWigs profile importer is unavailable."
 	end
-	local profileName = "V8 - " .. roleName
+	local profileName = "tui - " .. roleName
 	local success, errorMessage = BigWigsAPI.ImportProfileString(profileData, profileName, true)
 	if not success then return false, errorMessage or "BigWigs rejected the profile string." end
 	TaanUIDB.imports.bigwigs = roleName
@@ -195,7 +195,7 @@ local function ImportPartyCD(profileData, roleName)
 	if not PartyCDAPI or not PartyCDAPI.ImportProfile then
 		return false, "The PartyCD profile importer is unavailable."
 	end
-	local profileName = "V8 - " .. roleName
+	local profileName = "tui - " .. roleName
 	local existingName = PartyCDAPI.FindProfileName and PartyCDAPI:FindProfileName(profileName)
 	if existingName and PartyCDAPI.DeleteProfile then
 		local deleted, deleteError = PartyCDAPI:DeleteProfile(existingName)
@@ -224,7 +224,7 @@ local function EnableDetailsAllCharacters(resolution)
 	if not loaded then return false, "Details could not be loaded: " .. reason end
 	if not _detalhes then return false, "Details' profile settings are unavailable." end
 
-	local profileName = "V8 - " .. resolution
+	local profileName = "tui - " .. resolution
 	_detalhes.always_use_profile = true
 	_detalhes.always_use_profile_name = profileName
 	_detalhes.always_use_profile_exception = _detalhes.always_use_profile_exception or {}
@@ -644,7 +644,7 @@ local function BuildWindow()
 	ShowWelcome = function()
 		wizard:Hide()
 		welcome:Show()
-		titleText:SetText("V8 Installation")
+		titleText:SetText("TUI Installation")
 	end
 
 	local resolution1080 = MakeButton(welcome, "1080p", 146, function()
@@ -669,7 +669,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 12)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.1"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.3"))
 
 	frame.ShowWelcome = ShowWelcome
 	ShowWelcome()
@@ -678,7 +678,7 @@ local function BuildWindow()
 end
 
 StaticPopupDialogs.TAANUI_RELOAD = {
-	text = "V8 installation is complete. Reload the interface now?",
+	text = "TUI installation is complete. Reload the interface now?",
 	button1 = "Reload",
 	button2 = CANCEL,
 	OnAccept = ReloadUI,
@@ -807,8 +807,8 @@ local function SetSpecProfilesForResolution(resolution)
 		return
 	end
 
-	local dpsTankProfile = "V8 - Tank, Dps " .. resolution
-	local healerProfile = "V8 - Healer " .. resolution
+	local dpsTankProfile = "tui - Tank, Dps " .. resolution
+	local healerProfile = "tui - Healer " .. resolution
 	local function ProfileForSpec(specIndex)
 		return GetSpecializationRole(specIndex) == "HEALER" and healerProfile or dpsTankProfile
 	end
@@ -891,11 +891,11 @@ end
 
 local function PrintCommands()
 	Print("Available commands:")
-	Print("/taanui, /tui and /v8 - Open the V8 installer.")
-	Print("/tui 1080c - Install all 1080p profiles with Class Colors.")
-	Print("/tui 1080d - Install all 1080p profiles with Dark health bars.")
-	Print("/tui 1440c - Install all 1440p profiles with Class Colors.")
-	Print("/tui 1440d - Install all 1440p profiles with Dark health bars.")
+	Print("/taanui, /tui and /v8 - Open the TUI installer.")
+	Print("/tui install 1080c - Install all 1080p profiles with Class Colors.")
+	Print("/tui install 1080d - Install all 1080p profiles with Dark health bars.")
+	Print("/tui install 1440c - Install all 1440p profiles with Class Colors.")
+	Print("/tui install 1440d - Install all 1440p profiles with Dark health bars.")
 	Print("/tui set 1080 - Assign 1080p spec profiles and apply addon settings.")
 	Print("/tui set 1440 - Assign 1440p spec profiles and apply addon settings.")
 	Print("/tui set class - Enable ElvUI class-colored health bars.")
@@ -909,10 +909,10 @@ SLASH_TAANUI3 = "/tui"
 SlashCmdList.TAANUI = function(message)
 	local command = string.lower(string.match(message or "", "^%s*(.-)%s*$"))
 	local installs = {
-		["1080c"] = { "1080p", true },
-		["1080d"] = { "1080p", false },
-		["1440c"] = { "1440p", true },
-		["1440d"] = { "1440p", false },
+		["install 1080c"] = { "1080p", true },
+		["install 1080d"] = { "1080p", false },
+		["install 1440c"] = { "1440p", true },
+		["install 1440d"] = { "1440p", false },
 	}
 	local specInstalls = {
 		["set 1080"] = "1080p",
