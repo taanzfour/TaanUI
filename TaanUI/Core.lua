@@ -163,6 +163,30 @@ local function ApplyElvUIHealthColors(useClassColors)
 	return true, presetName .. " applied"
 end
 
+local function SetActionBarsMouseover(enabled)
+	local loaded, reason = LoadRequiredAddon("ElvUI")
+	if not loaded then return false, "ElvUI could not be loaded: " .. reason end
+	local E = ElvUI and ElvUI[1]
+	local actionbarSettings = E and E.db and E.db.actionbar
+	if not actionbarSettings then return false, "ElvUI's action bar settings are unavailable." end
+
+	for index = 1, 6 do
+		local settings = actionbarSettings["bar" .. index]
+		if settings then settings.mouseover = enabled end
+	end
+	if actionbarSettings.barPet then actionbarSettings.barPet.mouseover = enabled end
+
+	local actionBars = E:GetModule("ActionBars", true)
+	if actionBars and not InCombatLockdown() then
+		for index = 1, 6 do
+			if actionBars.PositionAndSizeBar then actionBars:PositionAndSizeBar("bar" .. index) end
+		end
+		if actionBars.PositionAndSizeBarPet then actionBars:PositionAndSizeBarPet() end
+	end
+
+	return true, enabled and "Action bars hidden until mouseover" or "Action bars always shown"
+end
+
 local function ImportDetails(profileData, resolution)
 	local loaded, reason = LoadRequiredAddon("Details")
 	if not loaded then return false, "Details could not be loaded: " .. reason end
@@ -669,7 +693,7 @@ local function BuildWindow()
 	local version = frame:CreateFontString(nil, "OVERLAY")
 	version:SetPoint("BOTTOMLEFT", frame, "BOTTOMLEFT", 14, 12)
 	SetExpressway(version, 11)
-	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.3"))
+	version:SetText("Version " .. (GetAddOnMetadata(addonName, "Version") or "3.1.4"))
 
 	frame.ShowWelcome = ShowWelcome
 	ShowWelcome()
@@ -887,6 +911,7 @@ local function SetSpecProfilesForResolution(resolution)
 	else
 		Print(failureCount .. " spec profile or addon settings step(s) failed.")
 	end
+	StaticPopup_Show("TAANUI_RELOAD")
 end
 
 local function PrintCommands()
@@ -900,6 +925,8 @@ local function PrintCommands()
 	Print("/tui set 1440 - Assign 1440p spec profiles and apply addon settings.")
 	Print("/tui set class - Enable ElvUI class-colored health bars.")
 	Print("/tui set dark - Enable ElvUI dark transparent health bars.")
+	Print("/tui bar hide - Hide action bars until mouseover.")
+	Print("/tui bar show - Keep action bars visible.")
 	Print("/tui commands - Show this command list.")
 end
 
@@ -928,6 +955,10 @@ SlashCmdList.TAANUI = function(message)
 		TaanUIDB.imports = TaanUIDB.imports or {}
 		RunImport("elvui", function()
 			return ApplyElvUIHealthColors(command == "set class")
+		end)
+	elseif command == "bar hide" or command == "bar show" then
+		RunImport("addonSettings", function()
+			return SetActionBarsMouseover(command == "bar hide")
 		end)
 	elseif command == "commands" then
 		PrintCommands()
